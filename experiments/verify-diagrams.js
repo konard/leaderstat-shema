@@ -5,6 +5,7 @@ const AdmZip = require("adm-zip");
 const docsDir = path.join(__dirname, "..", "docs");
 const svgPath = path.join(docsDir, "organizational-diagrams.svg");
 const pptxPath = path.join(docsDir, "organizational-diagrams.pptx");
+const vsdxPath = path.join(docsDir, "organizational-diagrams.vsdx");
 
 const requiredLabels = [
   "Директор технического департамента",
@@ -34,6 +35,7 @@ function assert(condition, message) {
 
 assert(fs.existsSync(svgPath), "SVG diagram is missing");
 assert(fs.existsSync(pptxPath), "PPTX diagram is missing");
+assert(fs.existsSync(vsdxPath), "VSDX diagram is missing");
 
 const svg = fs.readFileSync(svgPath, "utf8");
 for (const label of requiredLabels) {
@@ -46,4 +48,13 @@ for (const label of requiredLabels) {
   assert(slide.includes(label), `PPTX missing label: ${label}`);
 }
 
-console.log(`Verified ${requiredLabels.length} labels in SVG and PPTX.`);
+const vsdxZip = new AdmZip(vsdxPath);
+const vsdxEntries = vsdxZip.getEntries().map((entry) => entry.entryName);
+assert(vsdxEntries.includes("visio/document.xml"), "VSDX missing Visio document XML");
+assert(vsdxEntries.includes("visio/pages/page1.xml"), "VSDX missing first page XML");
+const visioPage = vsdxZip.readAsText("visio/pages/page1.xml");
+for (const label of requiredLabels) {
+  assert(visioPage.includes(label), `VSDX missing label: ${label}`);
+}
+
+console.log(`Verified ${requiredLabels.length} labels in SVG, PPTX, and VSDX.`);
