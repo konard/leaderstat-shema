@@ -6,6 +6,7 @@ Editable organizational block diagrams for issue
 ## Deliverables
 
 - [docs/organizational-diagrams.pptx](docs/organizational-diagrams.pptx) - PowerPoint file with editable shapes and text.
+- [docs/organizational-diagrams.vsdx](docs/organizational-diagrams.vsdx) - Visio file with editable shapes, text, and connectors.
 - [docs/organizational-diagrams.svg](docs/organizational-diagrams.svg) - editable SVG source/preview.
 
 ## Regenerate

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const pptxgen = require("pptxgenjs");
+const { ArrowHeads, VisioDocument } = require("ts-visio");
 
 const docsDir = path.join(__dirname, "..", "docs");
 fs.mkdirSync(docsDir, { recursive: true });
@@ -235,5 +236,124 @@ async function buildPptx() {
   await pptxDoc.writeFile({ fileName: path.join(docsDir, "organizational-diagrams.pptx") });
 }
 
+async function buildVsdx() {
+  const doc = await VisioDocument.create();
+  doc.setMetadata({
+    title: "Структура технического департамента и производственного отдела",
+    author: "OpenAI Codex",
+    company: "leaderstat/shema",
+    description: "Редактируемые организационные блок-схемы для Microsoft Visio",
+    keywords: "Visio VSDX organizational diagrams",
+  });
+
+  const page = doc.pages[0];
+  doc.renamePage(page, "Организационные схемы");
+  page.setSize(13.333, 7.5);
+
+  await page.addShape({
+    text: "Блок-схема 1. Структура технического департамента",
+    x: 3.63,
+    y: 7.05,
+    width: 5.9,
+    height: 0.3,
+    lineColor: "#FFFFFF",
+    fillColor: "#FFFFFF",
+    fontColor: "#1F2937",
+    fontFamily: "Arial",
+    fontSize: 17,
+    bold: true,
+    horzAlign: "center",
+    verticalAlign: "middle",
+  });
+  await page.addShape({
+    text: "Блок-схема 2. Производственный отдел",
+    x: 10.55,
+    y: 7.05,
+    width: 4.9,
+    height: 0.3,
+    lineColor: "#FFFFFF",
+    fillColor: "#FFFFFF",
+    fontColor: "#1F2937",
+    fontFamily: "Arial",
+    fontSize: 17,
+    bold: true,
+    horzAlign: "center",
+    verticalAlign: "middle",
+  });
+
+  async function addVisioBox(label, x, y, w, h, lineColor = "#2563EB", fillColor = "#F8FAFC") {
+    return page.addShape({
+      text: label,
+      x,
+      y,
+      width: w,
+      height: h,
+      geometry: "rounded-rectangle",
+      cornerRadius: 0.08,
+      fillColor,
+      lineColor,
+      fontColor: "#111827",
+      fontFamily: "Arial",
+      fontSize: 11,
+      bold: true,
+      horzAlign: "center",
+      verticalAlign: "middle",
+      textMarginLeft: 0.04,
+      textMarginRight: 0.04,
+      textMarginTop: 0.04,
+      textMarginBottom: 0.04,
+    });
+  }
+
+  async function connect(from, to) {
+    await page.connectShapes(from, to, ArrowHeads.None, ArrowHeads.Standard, {
+      lineColor: "#64748B",
+      lineWeight: 1.25,
+      routing: "straight",
+    });
+  }
+
+  const tech = {
+    director: await addVisioBox("Директор технического департамента", 3.63, 6.35, 2.65, 0.58),
+    constructor: await addVisioBox("Главный конструктор", 1.63, 5.25, 1.95, 0.55),
+    technologistHead: await addVisioBox("Главный технолог", 3.93, 5.25, 1.95, 0.55),
+    complex: await addVisioBox("Специалист комплексных решений", 6.33, 5.25, 2.15, 0.55),
+    pump: await addVisioBox("Руководитель насосного подразделения", 1.63, 4.25, 1.95, 0.6),
+    technologist: await addVisioBox("Технолог", 3.93, 4.25, 1.95, 0.55),
+    kip: await addVisioBox("КИП", 6.33, 4.25, 1.95, 0.55),
+    calc: await addVisioBox("Ведущий расчетчик", 1.63, 3.25, 1.95, 0.55),
+    material: await addVisioBox("Материаловед", 3.93, 3.25, 1.95, 0.55),
+    leadConstructor: await addVisioBox("Ведущий конструктор", 1.63, 2.25, 1.95, 0.55),
+    staff: await addVisioBox("Штат конструкторов", 1.63, 1.25, 1.95, 0.55),
+  };
+  await connect(tech.director, tech.constructor);
+  await connect(tech.director, tech.technologistHead);
+  await connect(tech.director, tech.complex);
+  await connect(tech.constructor, tech.pump);
+  await connect(tech.technologistHead, tech.technologist);
+  await connect(tech.complex, tech.kip);
+  await connect(tech.pump, tech.calc);
+  await connect(tech.technologist, tech.material);
+  await connect(tech.calc, tech.leadConstructor);
+  await connect(tech.leadConstructor, tech.staff);
+
+  const production = [
+    await addVisioBox("Руководитель производственного отдела", 10.5, 6.35, 2.55, 0.58, "#16A34A", "#F0FDF4"),
+    await addVisioBox("Производственный отдел", 10.5, 5.25, 2.25, 0.55, "#16A34A", "#F0FDF4"),
+    await addVisioBox("Полевой сервис", 10.5, 4.25, 2.25, 0.55, "#16A34A", "#F0FDF4"),
+    await addVisioBox("СПБ сервисный центр", 10.5, 3.25, 2.25, 0.55, "#16A34A", "#F0FDF4"),
+    await addVisioBox("Мурманский сервисный центр", 10.5, 2.25, 2.25, 0.55, "#16A34A", "#F0FDF4"),
+    await addVisioBox("Сахалинский сервисный центр", 10.5, 1.25, 2.25, 0.55, "#16A34A", "#F0FDF4"),
+  ];
+  for (let i = 0; i < production.length - 1; i++) {
+    await connect(production[i], production[i + 1]);
+  }
+
+  await doc.save(path.join(docsDir, "organizational-diagrams.vsdx"));
+}
+
 fs.writeFileSync(path.join(docsDir, "organizational-diagrams.svg"), buildSvg(), "utf8");
-buildPptx();
+Promise.all([buildPptx(), buildVsdx()]).catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
